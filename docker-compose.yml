@@ -2,14 +2,12 @@ services:
   # 1. The PostgreSQL Database
   db:
     image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: hks_user
-      POSTGRES_PASSWORD: hks_password
-      POSTGRES_DB: sensor_data
+    env_file:
+      - .env
     volumes:
       - pg_data:/var/lib/postgresql/data  # This satisfies the persistence constraint!
     ports:
-      - "5432:5432" # Exposed locally so you can use tools like DBeaver if needed
+      - "5433:5432" # Expose on 5433 to avoid conflicts with any local Postgres instances
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hks_user -d sensor_data"]
       interval: 5s
@@ -19,9 +17,8 @@ services:
   # 2. The FastAPI Backend
   api:
     build: ./api
-    environment:
-      # The API reads this environment variable to connect securely to the database
-      - DATABASE_URL=postgresql://hks_user:hks_password@db:5432/sensor_data
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
