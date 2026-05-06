@@ -1,0 +1,57 @@
+services:
+  # 1. The PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: hks_user
+      POSTGRES_PASSWORD: hks_password
+      POSTGRES_DB: sensor_data
+    volumes:
+      - pg_data:/var/lib/postgresql/data  # This satisfies the persistence constraint!
+    ports:
+      - "5432:5432" # Exposed locally so you can use tools like DBeaver if needed
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hks_user -d sensor_data"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. The FastAPI Backend
+  api:
+    build: ./api
+    environment:
+      # The API reads this environment variable to connect securely to the database
+      - DATABASE_URL=postgresql://hks_user:hks_password@db:5432/sensor_data
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 3. The React UI
+  frontend:
+    build: ./frontend
+    environment:
+      # Tells Next.js where to send API requests
+      - NEXT_PUBLIC_API_URL=/api
+
+  # 4. The Nginx Reverse Proxy
+  proxy:
+    build: ./nginx
+    ports:
+      - "80:80" # The single entry point for all web traffic
+    depends_on:
+      - api
+      - frontend
+
+  # # 5. LocalStack (Mock AWS)
+  # localstack:
+  #   image: localstack/localstack
+  #   ports:
+  #     - "127.0.0.1:4566:4566"            # LocalStack Gateway
+  #   environment: # cannot really mock rds, ec2, etc. in the Community version
+  #     - DOCKER_HOST=unix:///var/run/docker.sock
+  #   volumes:
+  #     - "/var/run/docker.sock:/var/run/docker.sock"
+
+# Defines the "backpack" for our database to keep data safe between restarts
+volumes:
+  pg_data:
