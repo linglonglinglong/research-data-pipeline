@@ -28,6 +28,23 @@ jobs:
   test-and-lint:
     name: Run Tests & Linting
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: myuser       # Match this to your backend expectations
+          POSTGRES_PASSWORD: mypassword
+          POSTGRES_DB: sensor_data
+        ports:
+          - 5432:5432
+        # This tells GitHub to wait until the DB is fully booted before running tests
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
