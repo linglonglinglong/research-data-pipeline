@@ -40,7 +40,10 @@ jobs:
 
       - name: Install Backend Dependencies & Test
         run: |
-          echo "Simulating passing Python tests..."
+          cd api
+          pip install -r requirements.txt
+          pytest
+          echo "Real Python tests passed successfully!"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
