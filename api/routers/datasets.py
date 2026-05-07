@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
@@ -43,3 +43,49 @@ def create_pull_job(job: PullJobCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_job)
     return {"message": "Pull job configured", "job_id": db_job.id}
+
+@router.get("/{dataset_id}/anomalies")
+def get_anomalies(
+    dataset_id: int, 
+    page: int = Query(1, ge=1), 
+    limit: int = Query(20, ge=1, le=100), 
+    db: Session = Depends(get_db)
+):
+    """Fetches anomalies and joins them with the original sensor data, with pagination."""
+    
+    # 1. Build the base query
+    base_query = db.query(models.Anomaly, models.CuratedSensorData).join(
+        models.CuratedSensorData, models.Anomaly.curated_data_id == models.CuratedSensorData.id
+    ).filter(
+        models.CuratedSensorData.dataset_id == dataset_id
+    )
+    
+    # 2. Get the total count for the frontend to calculate pages
+    total_count = base_query.count()
+    
+    # 3. Apply offset and limit
+    offset = (page - 1) * limit
+    results = base_query.order_by(models.Anomaly.confidence_score.desc())\
+                        .offset(offset)\
+                        .limit(limit)\
+                        .all()
+    
+    # 4. Format the data
+    data = [{
+        "id": anomaly.id,
+        "sensor_id": sensor.sensor_id,
+        "location": sensor.location,
+        "anomaly_type": anomaly.anomaly_type,
+        "confidence_score": round(anomaly.confidence_score, 2),
+        "temperature": sensor.temperature,
+        "detected_at": anomaly.detected_at.isoformat()
+    } for anomaly, sensor in results]
+    
+    # 5. Return the paginated wrapper
+    return {
+        "total": total_count,
+        "page": page,
+        "limit": limit,
+        "total_pages": (total_count + limit - 1) // limit if total_count > 0 else 1,
+        "data": data
+    }
