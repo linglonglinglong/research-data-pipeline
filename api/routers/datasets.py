@@ -44,6 +44,19 @@ def create_pull_job(job: PullJobCreate, db: Session = Depends(get_db)):
     db.refresh(db_job)
     return {"message": "Pull job configured", "job_id": db_job.id}
 
+@router.get("/pull-jobs")
+def get_pull_jobs(db: Session = Depends(get_db)):
+    """Fetches all configured automated pull jobs."""
+    jobs = db.query(models.PullJobConfig).all()
+    return [{
+        "id": job.id,
+        "dataset_id": job.dataset_id,
+        "source_url": job.source_url,
+        "cron_schedule": job.cron_schedule, 
+        # Using getattr as a safe fallback in case your SQLAlchemy model doesn't explicitly define is_active yet
+        "is_active": getattr(job, "is_active", True) 
+    } for job in jobs]
+
 @router.get("/{dataset_id}/anomalies")
 def get_anomalies(
     dataset_id: int, 

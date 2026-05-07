@@ -9,6 +9,7 @@ export default function Navigation() {
   const links = [
     { name: "Anomaly Dashboard", href: "/" },
     { name: "Data Ingestion", href: "/ingest" },
+    { name: "Pull Jobs", href: "/jobs" },
     { name: "Admin (Setup)", href: "/admin" },
   ];
 
