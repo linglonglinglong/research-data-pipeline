@@ -37,8 +37,8 @@ module "vpc" {
 # ==========================================
 # Load Balancer SG: Accepts all web traffic from the internet
 resource "aws_security_group" "alb_sg" {
-  name        = "${var.project_name}-alb-sg"
-  vpc_id      = module.vpc.vpc_id
+  name   = "${var.project_name}-alb-sg"
+  vpc_id = module.vpc.vpc_id
 
   ingress {
     from_port   = 80
@@ -46,7 +46,7 @@ resource "aws_security_group" "alb_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -57,8 +57,8 @@ resource "aws_security_group" "alb_sg" {
 
 # App SG: Only accepts traffic from the Load Balancer
 resource "aws_security_group" "app_sg" {
-  name        = "${var.project_name}-app-sg"
-  vpc_id      = module.vpc.vpc_id
+  name   = "${var.project_name}-app-sg"
+  vpc_id = module.vpc.vpc_id
 
   ingress {
     from_port       = 3000 # Frontend Port
@@ -84,8 +84,8 @@ resource "aws_security_group" "app_sg" {
 
 # Database SG: Only accepts traffic from the App containers
 resource "aws_security_group" "db_sg" {
-  name        = "${var.project_name}-db-sg"
-  vpc_id      = module.vpc.vpc_id
+  name   = "${var.project_name}-db-sg"
+  vpc_id = module.vpc.vpc_id
 
   ingress {
     from_port       = 5432
@@ -131,8 +131,8 @@ resource "aws_iam_role" "ecs_execution_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "ecs-tasks.amazonaws.com" }
     }]
   })
@@ -164,9 +164,9 @@ resource "aws_iam_role" "lambda_exec_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
       Principal = { Service = "lambda.amazonaws.com" }
-      Effect = "Allow"
+      Effect    = "Allow"
     }]
   })
 }
@@ -197,7 +197,7 @@ resource "aws_lambda_function" "pull_trigger" {
   environment {
     variables = {
       # This tells the Lambda where to send the request
-      API_URL = "http://internal-hks-alb-123456.us-east-1.elb.amazonaws.com/api" 
+      API_URL = "http://internal-hks-alb-123456.us-east-1.elb.amazonaws.com/api"
       API_KEY = var.api_key
     }
   }
